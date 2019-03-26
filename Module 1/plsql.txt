@@ -1,0 +1,414 @@
+============================================================================================
+1.1 Identify the problems(if any) in the below declarations:
+============================================================================================
+1 DECLARE
+2 V_Sample1 NUMBER(2);
+3 V_Sample2 CONSTANT NUMBER(2) ;
+4 V_Sample3 NUMBER(2) NOT NULL ;
+5 V_Sample4 NUMBER(2) := 50;
+6 V_Sample5 NUMBER(2) DEFAULT 25;
+7 BEGIN
+
+//Answer:
+Line 3 and Line 4 is wrong. Constraints cannot be declared in DECLARATION block.
+
+============================================================================================
+1.2 The following PL/SQL block is incomplete.
+============================================================================================
+
+DECLARE --outer block
+var_num1 NUMBER := 5;
+BEGIN
+DECLARE --inner block
+var_num1 NUMBER := 10;
+BEGIN
+DBMS_OUTPUT.PUT_LINE('Value for var_num1:' ||var_num1);
+--Can outer block variable (var_num1) be printed here.If Yes,Print the same.
+END;
+--Can inner block variable(var_num1)  be printed here.If Yes,Print the same.
+END;
+
+//Answer:
+No, the inner block variable cannot be printed in the outer block.
+The outer block variable can be printed in the inner block only if the variable name is different.
+Whenever a variable with the same name is declared in inner block as well as the outer block then 
+the value of the variable in the inner block is taken.
+
+============================================================================================
+1.3 Write a PL/SQL program to display the details of the employee number 7369.
+============================================================================================
+
+//PL SQL Block
+
+DECLARE
+empno emp.empno%type;
+name emp.ename%type;
+salary emp.sal%type;
+DOJ emp.HIREDATE%type;
+commision emp.comm%type;
+deptno emp.deptno%type;
+
+BEGIN
+SELECT empno,ename,sal,HIREDATE,comm,deptno into empno,name,salary,DOJ,commision,deptno from emp where empno=7369;
+dbms_output.put_line(empno||' '||name||' '||salary||' '||DOJ||' '||commision||' '||deptno);
+END;
+
+//Output:
+
+7369 SMITH 1040 17-DEC-80  20
+
+PL/SQL procedure successfully completed.
+
+===============================================================================================================
+1.4 Write a PL/SQL program to accept the Employee Name and display the details of that Employee including the Department Name. 
+===============================================================================================================
+//Program
+
+DECLARE
+	empno emp.empno%type;
+	empname emp.ename%type;
+	salary emp.sal%type;
+	DOJ emp.HIREDATE%type;
+	deptname DEPARTMENT_MASTER.dept_name%type;
+
+	PROCEDURE getEmpDetails(ename1 emp.ename%type, empno OUT emp.empno%type, empname OUT emp.ename%type, salary OUT emp.sal%type, DOJ OUT emp.HIREDATE%type, deptname OUT DEPARTMENT_MASTER.dept_name%type) IS
+	BEGIN
+		select e.empno,e.ename,e.sal,e.HIREDATE,d.dept_name
+		into empno,empname,salary,DOJ,deptname
+		from emp e,DEPARTMENT_MASTER d
+		where e.DEPTNO=d.DEPT_CODE and ename=ename1;
+	END;
+BEGIN
+	getEmpDetails('SMITH',empno,empname,salary,DOJ,deptname);
+	dbms_output.put_line(empno||' '||empname||' '||salary||' '||DOJ||' '||deptname);
+END;
+
+
+//Output:
+
+7369 SMITH 800 17-DEC-80 Electricals
+
+===============================================================================================================
+1.5 Write a PL/SQL block to increase the salary of employees 
+Write a PL/SQL block to increase the salary of employees either by 30 % or 5000 whichever is minimum for a given Department_Code. 
+Find out 30% of salary, if it is more than 5000, increase by 5000. If it is less than 5000, increase by 30% of salary
+===============================================================================================================
+
+
+//Program:
+
+DECLARE
+	changed_sal emp.sal%type;
+	current_sal emp.sal%type;
+	emp_no emp.empno%type;
+	dept_no number(2):= &department_number;
+	CURSOR empinfo IS select empno,sal from emp where deptno = dept_no;
+BEGIN
+	IF NOT empinfo%ISOPEN THEN
+		open empinfo;
+	END IF;
+	FETCH empinfo into emp_no,current_sal;
+	WHILE empinfo%found
+	LOOP
+	IF current_sal*0.3>5000 THEN
+		changed_sal:= current_sal+5000;
+	ELSE
+		changed_sal := current_sal+current_sal*0.3;
+	END IF;
+		update emp set sal=changed_sal
+		where empno=emp_no;
+		fetch empinfo into emp_no,current_sal;
+	END LOOP;	
+	CLOSE empinfo;
+END;
+
+//Output:
+
+Enter value for department_number: 20
+old   5:        dept_no number(2):= &department_number;
+new   5:        dept_no number(2):= 20;
+
+PL/SQL procedure successfully completed.
+
+
+===============================================================================================================
+
+2.1 The following PL/SQL block attempts to calculate bonus of staff. 
+
+2.2 Rewrite the above block.
+Rewrite the above block to achieve the requirement.
+===============================================================================================================
+The following errors are there in the code given:
+1. V_SAL should be declared before V_Bonus as it is referencing the type of V_SAL.
+2. There is a more than one rows returned so the exception is to be added.
+3. Also the "Others" exception is to be added.
+
+//Updated Code:
+
+DECLARE
+V_SAL STAFF_MASTER.STAFF_SAL%TYPE; 
+V_BONUS V_SAL%TYPE;
+
+BEGIN
+SELECT STAFF_SAL INTO V_SAL FROM STAFF_MASTER WHERE MGR_CODE=100006;
+
+V_BONUS:=2*V_SAL;
+DBMS_OUTPUT.PUT_LINE('STAFF SALARY IS ' || V_SAL);
+DBMS_OUTPUT.PUT_LINE('STAFF BONUS IS ' || V_BONUS);
+
+EXCEPTION
+	WHEN NO_DATA_FOUND THEN
+		DBMS_OUTPUT.PUT_LINE('Data Not Found');
+	WHEN too_many_rows THEN
+		dbms_output.put_line('ERROR: More Than One Row Returned');
+	WHEN Others THEN
+		dbms_output.put_line('ERROR: Unknown error occured.');
+END;
+
+
+===============================================================================================================
+2.3: Write a PL/SQL program 
+Write a PL/SQL program to check for the commission for an employee no 7369. If no commission exists, then display the error message. Use Exceptions.
+===============================================================================================================
+//Program:
+
+DECLARE
+	comm emp.comm%type;
+	noComm exception;
+BEGIN
+	select comm into comm from emp WHERE empno=7369;
+	IF comm IS NULL THEN
+		RAISE noComm;	
+	ELSE
+		dbms_output.put_line(comm);
+	END IF;
+EXCEPTION
+	WHEN noComm THEN
+		dbms_output.put_line('Error:No Commision Exists');
+END;
+
+//Output:
+
+Error:No Commision Exists
+
+
+===============================================================================================================
+3.1. Write a function to compute age. 
+The function should accept a date and return age in years.
+===============================================================================================================
+
+//Create Function
+CREATE OR REPLACE FUNCTION age(dob DATE) RETURN number IS
+	age number(10,0);
+BEGIN
+	select MONTHS_BETWEEN(SYSDATE,DOB) INTO age from dual;
+	RETURN age/12;
+END;
+
+
+//Execute Function
+
+DECLARE
+	returnAge number(10,0);
+
+BEGIN
+
+	returnAge := age(TO_DATE('07-09-2000','DD-MM-YYYY'));
+	dbms_output.put_line(returnAge);
+END;
+
+
+//Output:
+
+17
+===============================================================================================================
+3.2 Write a procedure to find the manager of a staff. 
+Procedure should return the following – Staff_Code, Staff_Name, Dept_Code and Manager Name.
+===============================================================================================================
+//Create Procedure
+
+CREATE OR REPLACE procedure find_mgr(empcode staff_master.staff_code%type, staffcode OUT staff_master.staff_code%type,staffname OUT staff_master.staff_name%type, deptcode OUT staff_master.dept_code%type,managername OUT staff_master.staff_name%type) IS
+BEGIN
+	SELECT e.staff_code,e.staff_name,e.dept_code,m.staff_name
+	INTO staffcode, staffname, deptcode, managername
+	FROM staff_master e, staff_master m
+	WHERE e.mgr_code = m.staff_code and
+	e.staff_code = empcode;
+END;
+/
+
+//Run Procedure
+
+DECLARE
+	staffcode staff_master.staff_code%type;
+	staffname staff_master.staff_name%type;
+	deptcode staff_master.dept_code%type;
+	managername staff_master.staff_name%type;
+	empcode staff_master.staff_code%type;
+BEGIN
+	empcode := &employee_number;
+	find_mgr(empcode,staffcode,staffname,deptcode,managername);
+	dbms_output.put_line('Employee code: '|| staffcode);
+	dbms_output.put_line('Employee name: '||staffname);
+	dbms_output.put_line('Department code: '||deptcode);
+	dbms_output.put_line('Manager name: '|| managername);
+END;
+
+
+//Output:
+
+Enter value for employee_number: 100008
+old   8:        empcode := &employee_number;
+new   8:        empcode := 100008;
+Employee code: 100008
+Employee name: Raviraj
+Department code: 40
+Manager name: Allen
+
+PL/SQL procedure successfully completed.
+===============================================================================================================
+3.3. Write a function to compute the following. 
+Function should take Staff_Code and return the cost to company.
+
+DA = 15% Salary, HRA= 20% of Salary, TA= 8% of Salary.
+Special Allowance will be decided based on the service in the company.
+< 1 Year 				Nil
+>=1 Year< 2 Year			10% of Salary
+>=2 Year< 4 Year			20% of Salary
+>4 Year					30% of Salary
+===============================================================================================================
+CREATE OR REPLACE FUNCTION calc_ctc(staffcode staff_master.staff_code%type) RETURN number AS 
+ctc number;
+salary staff_master.staff_sal%type;
+exp number;
+doj staff_master.hiredate%type;
+
+BEGIN
+	SELECT staff_sal,hiredate into salary,doj FROM staff_master WHERE staff_code = staffcode;
+	SELECT (sysdate-doj)/365 INTO exp FROM dual;
+	ctc := salary*1.43;
+	IF exp<1 THEN
+		NULL;	
+	ELSE	
+		IF exp<2 THEN
+			ctc:= salary*0.1;
+		ELSE
+			IF exp<4 THEN
+				ctc:= ctc+salary*0.2;
+			ELSE
+				ctc:= ctc+salary*0.3;
+			END IF;
+		END IF;
+	END IF;
+	RETURN CTC;
+END;
+
+
+DECLARE
+	ctc number;
+BEGIN
+	ctc:= calc_ctc(100009);
+	dbms_output.put_line('CTC: '||CTC);
+END;
+/
+
+CTC: 47575
+
+===============================================================================================================
+3.4. Write a procedure that accept Staff_Code 
+Write a procedure that accept Staff_Code and update the salary and store the old salary details 
+in Staff_Master_Back (Staff_Master_Back has the same structure without any constraint) table.
+Exp< 2 then no Update
+Exp> 2 and < 5 then 20% of salary 
+Exp> 5 then 25% of salary 
+===============================================================================================================
+//Create staff_master_back table
+CREATE TABLE staff_Master_Back(
+Staff_Code number(8) PRIMARY KEY,
+Staff_Name varchar2(50),
+Design_Code REFERENCES Designation_Master(design_code),
+Dept_Code REFERENCES Department_Master(dept_code),
+Staff_dob DATE,
+Hiredate DATE,
+Mgr_code NUMBER(8),
+Staff_sal NUMBER (10,2),
+Staff_address VARCHAR2(240));
+
+
+
+CREATE OR REPLACE PROCEDURE update_sal(staffcode staff_master.staff_code%type) As
+	salary staff_master.staff_sal%type;
+	exp number;
+	doj staff_master.hiredate%type;
+BEGIN
+	SELECT staff_sal,hiredate into salary,doj FROM staff_master
+	WHERE staff_code = staffcode;
+	SELECT ((SYSDATE-doj)/365) INTO exp FROM dual;
+	IF exp<2 THEN
+		NULL;
+	ELSE
+		IF exp<5 THEN
+			UPDATE staff_master SET staff_sal = salary+salary*0.2
+			WHERE staff_code = staffcode;	
+			INSERT INTO staff_master_back (staff_code,staff_sal,hiredate) VALUES(staffcode,salary,doj);
+		ELSE
+			UPDATE staff_master SET staff_sal = salary+salary*0.25
+			WHERE staff_code = staffcode;
+			INSERT INTO staff_master_back (staff_code,staff_sal,hiredate) VALUES(staffcode,salary,doj);
+		END IF;
+	END IF;
+END;
+
+
+DECLARE
+	staffcode staff_master.staff_code%type := &staff_code;
+BEGIN
+	update_sal(staffcode);
+END;
+
+//Output:
+
+Enter value for staff_code: 100008
+old   2:        staffcode staff_master.staff_code%type := &staff_code;
+new   2:        staffcode staff_master.staff_code%type := 100008;
+
+PL/SQL procedure successfully completed.
+
+===============================================================================================================
+3.5. Write a procedure to insert details into Book_Transaction table. 
+Procedure should accept the book code and staff/student code. Date of issue is current date and the 
+expected return date should be 10 days from the current date. If the expected return date falls on Saturday or Sunday, 
+then it should be the next working day.
+===============================================================================================================
+//Create Procedure
+
+CREATE OR REPLACE PROCEDURE insertBookTransaction(book_code Book_transactions.BOOK_CODE%type,student_code Book_transactions.STUDENT_CODE%type,staff_code Book_transactions.Staff_Code%type,returnDate OUT Book_transactions.Book_expected_return_date%type) IS
+	
+BEGIN
+	returnDate := SYSDATE+10;
+	IF (TRIM(TO_CHAR(returnDate,'Day')) = 'Sunday') THEN
+		returnDate := NEXT_DAY(returnDate,'Mon');
+
+	ELSIF (TRIM(TO_CHAR(returnDate,'Day')) = 'Saturday') THEN
+		returnDate := NEXT_DAY(returnDate,'Mon');
+	END IF;
+	INSERT INTO Book_transactions VALUES (book_code,student_code,staff_code,SYSDATE,returnDate,NULL);
+END;
+
+
+//Execute procedure
+
+DECLARE
+	returnDate Book_transactions.Book_expected_return_Date%type;
+
+BEGIN
+
+insertBookTransaction(10000004,1017,NULL,returnDate);
+dbms_output.put_line('Return date: '||returnDate||' '||TO_CHAR(returnDate,'Day'));
+
+END;
+/
+
+//Output:
+
+Return date: 20-NOV-17 Monday
